@@ -1,10 +1,10 @@
-﻿using DbTableEditor.ViewModels;
+﻿using DbTableEditor.Data;
+using DbTableEditor.ViewModels;
 using DbTableEditor.Views;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using SalesAnalysis.Data;
 using System.IO;
 using System.Windows;
 
@@ -31,6 +31,8 @@ namespace DbTableEditor
                     // Подключаем DbContext
                     services.AddDbContext<MyDbContext>(options =>
                         options.UseSqlServer(context.Configuration.GetConnectionString("DefaultConnection")));
+
+                    services.AddTransient<IGetDataFromDb, OperationsDb>();
 
                     // Регистрируем ViewModels
                     services.AddTransient<MainViewModel>();

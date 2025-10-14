@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace SalesAnalysis.Data
+namespace DbTableEditor.Data
 {
     /// <summary>
     /// Контекст БД

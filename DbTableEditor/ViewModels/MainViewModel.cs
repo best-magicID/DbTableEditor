@@ -1,52 +1,38 @@
-﻿using Microsoft.EntityFrameworkCore;
-using SalesAnalysis.Data;
+﻿using DbTableEditor.Data;
+using System.Collections.ObjectModel;
 
 namespace DbTableEditor.ViewModels
 {
-    public class MainViewModel
+    public class MainViewModel : BaseViewModel
     {
-        private readonly MyDbContext _context;
+        private readonly IGetDataFromDb _dbService;
 
+        public ObservableCollection<string> Tables { get; set; } = [];
+
+        /// <summary>
+        /// Пустой конструктор для дизайнера
+        /// </summary>
         public MainViewModel()
         {
 
         }
 
-        public MainViewModel(MyDbContext context)
+        public MainViewModel(IGetDataFromDb dbService)
         {
-            _context = context;
+            _dbService = dbService;
 
-            if(CountModels() == 1)
+            if (_dbService.CheckConnect())
             {
-                CountModels();
+                var tables = _dbService.GetTables();
 
-                LoadData();
+                Tables.Clear();
+
+                foreach (var nameTable in tables)
+                {
+                    Tables.Add(nameTable);
+                }
             }
         }
 
-        public int CountModels()
-        {
-            if (_context == null)
-            {
-                return 0;
-            }
-
-            return _context.Database.CanConnect() ? 1 : 0;
-        }
-
-        public void LoadData()
-        {
-            //var tables = _context.Set<Models.TableModel>().ToList();
-
-                var tableNames = _context.Model
-                    .GetEntityTypes()
-                    .Select(t => t.GetTableName())
-                    .Distinct()
-                    .ToList();
-
-                foreach (var name in tableNames)
-                    Console.WriteLine(name);
-            
-        }
     }
 }

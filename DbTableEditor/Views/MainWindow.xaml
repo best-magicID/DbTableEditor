@@ -33,7 +33,17 @@
 
         <DataGrid Grid.Row="1"
                   Grid.Column="0"
-                  Grid.RowSpan="2"/>
+                  Grid.RowSpan="2"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  ItemsSource="{Binding Tables}">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Таблицы" 
+                                    Binding="{Binding}"
+                                    Width="*" 
+                                    IsReadOnly="True"/>
+            </DataGrid.Columns>
+        </DataGrid>
 
         <GridSplitter Width="5"
                       Grid.Row="0"
