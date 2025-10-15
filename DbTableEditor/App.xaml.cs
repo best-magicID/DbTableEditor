@@ -1,4 +1,5 @@
 ﻿using DbTableEditor.Data;
+using DbTableEditor.Services;
 using DbTableEditor.ViewModels;
 using DbTableEditor.Views;
 using Microsoft.EntityFrameworkCore;
@@ -38,7 +39,10 @@ namespace DbTableEditor
                     services.AddTransient<MainViewModel>();
 
                     // Регистрируем окна
-                    services.AddTransient<MainWindow>();
+                    services.AddTransient<MainWindowView>();
+
+                    // Фабрика окон
+                    services.AddSingleton<IWindowFactory, WindowFactory>();
                 })
                 .Build();
         }
@@ -47,7 +51,7 @@ namespace DbTableEditor
         {
             await AppHost.StartAsync();
 
-            var mainWindow = AppHost.Services.GetRequiredService<MainWindow>();
+            var mainWindow = AppHost.Services.GetRequiredService<MainWindowView>();
             mainWindow.DataContext = AppHost.Services.GetRequiredService<MainViewModel>();
 
             mainWindow.Show();

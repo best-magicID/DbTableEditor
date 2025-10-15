@@ -103,6 +103,23 @@ namespace DbTableEditor.Data
 
             return tables.Values.ToList();
         }
+
+        /// <summary>
+        /// Удаление выбранной таблицы
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <exception cref="ArgumentException"></exception>
+        public void DeleteTable(string tableName)
+        {
+            if (string.IsNullOrWhiteSpace(tableName))
+            {
+                throw new ArgumentException("Имя таблицы не может быть пустым.", nameof(tableName));
+            }
+
+            var sql = $"DROP TABLE [{tableName}]";
+
+            _myDbContext.Database.ExecuteSqlRaw(sql);
+        }
     }
 
 }

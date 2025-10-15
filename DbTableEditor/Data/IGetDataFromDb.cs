@@ -21,5 +21,11 @@ namespace DbTableEditor.Data
         /// </summary>
         List<TableInfoModel> GetTablesStructure();
 
+        /// <summary>
+        /// Удаление выбранной таблицы
+        /// </summary>
+        /// <param name="tableName"></param>
+        void DeleteTable(string tableName);
+
     }
 }
