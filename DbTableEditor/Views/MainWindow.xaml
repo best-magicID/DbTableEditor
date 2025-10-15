@@ -46,7 +46,7 @@
             <DataGrid AutoGenerateColumns="False"
                       CanUserAddRows="False"
                       Margin="0 0 5 0"
-                      ItemsSource="{Binding StructureTables}"
+                      ItemsSource="{Binding ListStructureTables}"
                       SelectedItem="{Binding SelectedTable, Mode=TwoWay}">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Таблицы" 
