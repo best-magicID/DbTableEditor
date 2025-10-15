@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using DbTableEditor.Models;
+using System.Collections.ObjectModel;
 
 namespace DbTableEditor.Data
 {
@@ -14,6 +15,11 @@ namespace DbTableEditor.Data
         /// Получает список таблиц.
         /// </summary>
         List<string> GetTables();
+
+        /// <summary>
+        /// Получение структур таблиц
+        /// </summary>
+        List<TableInfoModel> GetTablesStructure();
 
     }
 }

@@ -12,6 +12,15 @@
         Width="800" 
         WindowStartupLocation="CenterScreen">
     
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Margin" 
+                    Value="5"/>
+            <Setter Property="Padding"
+                    Value="5 2"/>
+        </Style>
+    </Window.Resources>
+    
     <Grid Margin="5">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="0.3*"/>
@@ -26,44 +35,82 @@
         </Grid.RowDefinitions>
 
         <!--Левая часть-->
-        <TextBlock Text="Список таблиц"
-                   Grid.Row="0"
+        <DockPanel Grid.Row="0"
                    Grid.Column="0"
-                   VerticalAlignment="Bottom"/>
+                   Grid.RowSpan="3">
 
-        <DataGrid Grid.Row="1"
-                  Grid.Column="0"
-                  Grid.RowSpan="2"
-                  AutoGenerateColumns="False"
-                  CanUserAddRows="False"
-                  ItemsSource="{Binding Tables}">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Таблицы" 
-                                    Binding="{Binding}"
-                                    Width="*" 
-                                    IsReadOnly="True"/>
-            </DataGrid.Columns>
-        </DataGrid>
+            <TextBlock Text="Список таблиц"
+                       VerticalAlignment="Bottom"
+                       DockPanel.Dock="Top"/>
+
+            <DataGrid AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      Margin="0 0 5 0"
+                      ItemsSource="{Binding StructureTables}"
+                      SelectedItem="{Binding SelectedTable, Mode=TwoWay}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Таблицы" 
+                                        Binding="{Binding TableName}"
+                                        Width="*" 
+                                        IsReadOnly="True"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </DockPanel>
 
         <GridSplitter Width="5"
                       Grid.Row="0"
                       Grid.Column="1"
                       Grid.RowSpan="3"
+                     Background="LightGray"
                       HorizontalAlignment="Stretch"/>
 
         <!--Правая часть-->
         <TextBlock Text="Описание таблицы"
                    Grid.Row="1"
-                   Grid.Column="3"/>
+                   Grid.Column="3"
+                   Margin="5"/>
 
         <DataGrid Grid.Row="2"
-                  Grid.Column="2"/>
+                  Grid.Column="2"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  Margin="5 0 0 0"
+                  ItemsSource="{Binding Columns}">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Имя столбца" 
+                                    Binding="{Binding ColumnName}"
+                                    Width="*" 
+                                    IsReadOnly="True"/>
+
+                <DataGridTextColumn Header="Тип данных" 
+                                    Binding="{Binding DataType}"
+                                    Width="*" 
+                                    IsReadOnly="True"/>
+
+                <DataGridTextColumn Header="Максимальная длина" 
+                                    Binding="{Binding MaxLength}"
+                                    Width="*" 
+                                    IsReadOnly="True"/>
+
+                <DataGridTextColumn Header="IsNullable" 
+                                    Binding="{Binding IsNullable}"
+                                    Width="*" 
+                                    IsReadOnly="True"/>
+
+                <DataGridTextColumn Header="Первичный ключ" 
+                                    Binding="{Binding IsPrimaryKey}"
+                                    Width="*" 
+                                    IsReadOnly="True"/>
+            </DataGrid.Columns>
+        </DataGrid>
 
         <StackPanel Orientation="Horizontal"
                     Grid.Row="0"
                     Grid.Column="3"
                     Margin="5">
 
+            <Button Content="Добавить таблицу"/>
+            <Button Content="Удалить таблицу"/>
             <Button Content="Редакторвать таблицу"/>
             
         </StackPanel>
