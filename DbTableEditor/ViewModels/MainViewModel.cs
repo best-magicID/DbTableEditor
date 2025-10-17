@@ -16,8 +16,10 @@ namespace DbTableEditor.ViewModels
         #region ПОЛЯ И СВОЙСТВА
 
         private readonly IGetDataFromDb _dbService;
+        private readonly IWindowFactory _windowFactory;
 
-        private readonly IWindowFactory _windowFactory; 
+        private TableInfoModel? _selectedTable = null!;
+
 
         /// <summary>
         /// Список имен таблиц из БД
@@ -42,17 +44,20 @@ namespace DbTableEditor.ViewModels
                 OnPropertyChanged(nameof(Columns));
             }
         }
-        private TableInfoModel? _selectedTable = null!;
 
         /// <summary>
         /// Колонки выбранной таблицы
         /// </summary>
         public IEnumerable<ColumnInfoModel> Columns => SelectedTable?.Columns ?? [];
 
+
+        public RaiseCommand? DeleteTableCommand { get; private set; }
+        public RaiseCommand? OpenWindowCreateTableCommand { get; private set; }
+        public RaiseCommand? OpenWindowChangeTableCommand { get; private set; }
+        public RaiseCommand? UpdateListTablesCommand { get; private set; }
+
         #endregion
 
-        public RaiseCommand DeleteTableCommand { get; private set; } 
-        public RaiseCommand OpenCreateWindowCommand { get; private set; }
 
         #region КОНСТРУКТОР
 
@@ -75,16 +80,25 @@ namespace DbTableEditor.ViewModels
                 //LoadNamesTables();
                 LoadStructureTables();
             }
+            else
+            {
+                GeneralMethods.ShowNotification("Нет доступа к БД.");
+            }
         }
 
         #endregion
 
         #region МЕТОДЫ
 
+        /// <summary>
+        /// Загрузка команд
+        /// </summary>
         public void LoadCommands()
         {
-            DeleteTableCommand = new RaiseCommand(DeleteTableCommand_Execute);
-            OpenCreateWindowCommand = new RaiseCommand(OpenCreateWindowCommand_Execute);
+            DeleteTableCommand = new RaiseCommand(DeleteTableCommand_Execute, DeleteTableCommand_CanExecute);
+            OpenWindowCreateTableCommand = new RaiseCommand(OpenWindowCreateTableCommand_Execute);
+            OpenWindowChangeTableCommand = new RaiseCommand(OpenWindowChangeTableCommand_Execute, DeleteTableCommand_CanExecute);
+            UpdateListTablesCommand = new RaiseCommand(UpdateListTablesCommand_Execute);
         }
 
         /// <summary>
@@ -115,6 +129,19 @@ namespace DbTableEditor.ViewModels
             }
         }
 
+        /// <summary>
+        /// Выполнить команду "Удалить таблицу"
+        /// </summary>
+        /// <param name="parameter"></param>
+        private bool DeleteTableCommand_CanExecute(object parameter)
+        {
+            return SelectedTable != null;
+        }
+
+        /// <summary>
+        /// Выполнить команду "Удалить таблицу"
+        /// </summary>
+        /// <param name="parameter"></param>
         private void DeleteTableCommand_Execute(object parameter)
         {
             if (SelectedTable == null) 
@@ -133,14 +160,58 @@ namespace DbTableEditor.ViewModels
             GeneralMethods.ShowNotification("Таблица удалена");
         }
 
-        private void OpenCreateWindowCommand_Execute(object parameter)
+        /// <summary>
+        /// Выполнить команду "Открыть окно создания таблицы"
+        /// </summary>
+        /// <param name="parameter"></param>
+        private void OpenWindowCreateTableCommand_Execute(object parameter)
         {
-            var window = _windowFactory.CreateWindow<WindowAddOrChangeTableView, MainViewModel>();
-            window.ShowDialog();
+            try
+            {
+                var typeAction = parameter.ToString()?.ToLower() ?? string.Empty;
 
-            // После закрытия окна можно обновить список таблиц
-            // например:
-            // Tables = new ObservableCollection<TableInfo>(_dbService.GetTablesStructure());
+                if (typeAction == "add")
+                {
+                    var window = _windowFactory.CreateWindow<WindowAddOrChangeTableView, WindowAddOrChangeTableViewModel>(typeAction);
+                    window.ShowDialog();
+                }
+            }
+            catch (Exception ex)
+            {
+                GeneralMethods.ShowNotification("Ошибка окна.\r\n\r\n" + ex.Message);
+            }
+            
+
+            // После закрытия окна обновить список таблиц
+        }
+
+        /// <summary>
+        /// Выполнить команду "Открыть окно редактирования таблицы"
+        /// </summary>
+        /// <param name="parameter"></param>
+        private void OpenWindowChangeTableCommand_Execute(object parameter)
+        {
+            try
+            {
+                var typeAction = parameter.ToString()?.ToLower() ?? string.Empty;
+
+                if (typeAction == "change" && SelectedTable != null)
+                {
+                    var window = _windowFactory.CreateWindow<WindowAddOrChangeTableView, WindowAddOrChangeTableViewModel>(typeAction, SelectedTable);
+                    window.ShowDialog();
+                }
+            }
+            catch (Exception ex)
+            {
+                GeneralMethods.ShowNotification("Ошибка окна.\r\n\r\n" + ex.Message);
+            }
+        }
+
+        private void UpdateListTablesCommand_Execute(object parameter)
+        {
+            LoadStructureTables();
+            SelectedTable = null;
+            GeneralMethods.ShowNotification("Список таблиц обновлен.");
         }
 
         #endregion

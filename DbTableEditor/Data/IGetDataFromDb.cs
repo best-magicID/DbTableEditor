@@ -1,5 +1,4 @@
 ﻿using DbTableEditor.Models;
-using System.Collections.ObjectModel;
 
 namespace DbTableEditor.Data
 {
@@ -27,5 +26,17 @@ namespace DbTableEditor.Data
         /// <param name="tableName"></param>
         void DeleteTable(string tableName);
 
+        /// <summary>
+        /// Создание новой таблицы
+        /// </summary>
+        /// <param name="newOrChangeTable"></param>
+        bool CreateTable(TableInfoModel newOrChangeTable);
+
+        /// <summary>
+        /// Изменяет структуру таблицы
+        /// </summary>
+        /// <param name="oldNameTable"></param>
+        /// <param name="newOrChangeTable"></param>
+        void ChangeTable(TableInfoModel newOrChangeTable);
     }
 }

@@ -3,17 +3,37 @@
     /// <summary>
     /// Информация о колонках таблицы
     /// </summary>
-    public class ColumnInfoModel
+    public class ColumnInfoModel : BaseModel
     {
+        private string _columnName = string.Empty;
+        private SqlDataType _dataType = SqlDataType.VarChar;
+        private bool _isPrimaryKey = false;
+
         /// <summary>
         /// Название колонки
         /// </summary>
-        public string ColumnName { get; set; } = null!;
+        public string ColumnName
+        {
+            get => _columnName;
+            set
+            {
+                _columnName = value;
+                OnPropertyChanged();
+            }
+        }
 
         /// <summary>
         /// Тип колонки
         /// </summary>
-        public string DataType { get; set; } = null!;
+        public SqlDataType DataType
+        {
+            get => _dataType;
+            set
+            {
+                _dataType = value;
+                OnPropertyChanged();
+            }
+        }
 
         /// <summary>
         /// Максимальная длина строки
@@ -33,7 +53,14 @@
         /// <summary>
         /// Первичный ключ
         /// </summary>
-        public bool IsPrimaryKey { get; set; } = false;
-
+        public bool IsPrimaryKey
+        {             
+            get => _isPrimaryKey;
+            set
+            {
+                _isPrimaryKey = value;
+                OnPropertyChanged();
+            }
+        }
     }
 }

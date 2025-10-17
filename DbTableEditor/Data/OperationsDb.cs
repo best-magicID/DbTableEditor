@@ -1,6 +1,10 @@
 ﻿using DbTableEditor.Helpers;
 using DbTableEditor.Models;
+using DbTableEditor.Services;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
+using System.Text;
 
 namespace DbTableEditor.Data
 {
@@ -11,10 +15,12 @@ namespace DbTableEditor.Data
     {
         private readonly MyDbContext _myDbContext;
 
+
         public OperationsDb(MyDbContext myDbContext)
         {
             _myDbContext = myDbContext;
         }
+
 
         /// <summary>
         /// Проверка соединения с БД
@@ -89,7 +95,7 @@ namespace DbTableEditor.Data
                     var column = new ColumnInfoModel
                     {
                         ColumnName = reader.GetString(1),
-                        DataType = reader.GetString(2),
+                        DataType = DataTypeProvider.GetSqlDataType(reader.GetString(2)),
                         MaxLength = reader.IsDBNull(3) ? null : reader.GetInt32(3),
                         IsNullable = reader.GetString(4) == "YES",
                         DefaultValue = reader.IsDBNull(5) ? null : reader.GetString(5),
@@ -120,6 +126,124 @@ namespace DbTableEditor.Data
 
             _myDbContext.Database.ExecuteSqlRaw(sql);
         }
+
+        /// <summary>
+        /// Создание новой таблицы
+        /// </summary>
+        /// <param name="newOrChangeTable"></param>
+        public bool CreateTable(TableInfoModel newOrChangeTable)
+        {
+            if (TableExists(newOrChangeTable.TableName))
+            {
+                GeneralMethods.ShowNotification($"Таблица с именем '{newOrChangeTable.TableName}' уже существует.");
+                return false;
+            }
+
+            var sql = BuildCreateTableSql(newOrChangeTable);
+            try
+            {
+                _myDbContext.Database.ExecuteSqlRaw(sql);
+                return true;
+            }
+            catch (SqlException ex)
+            {
+                GeneralMethods.ShowNotification("Ошибка при создании таблицы.\r\n\r\n" + ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Проверяет, существует ли таблица в базе данных.
+        /// </summary>
+        private bool TableExists(string tableName)
+        {
+            var sql = $@"SELECT COUNT(*) 
+                         FROM INFORMATION_SCHEMA.TABLES 
+                         WHERE TABLE_TYPE = 'BASE TABLE' 
+                         AND TABLE_NAME = @p0";
+
+            var count = _myDbContext.Database.SqlQueryRaw<int>(sql, tableName)
+                                             .AsEnumerable()
+                                             .FirstOrDefault();
+
+            return count > 0;
+        }
+
+        /// <summary>
+        /// Построение SQL для создания таблицы
+        /// </summary>
+        /// <param name="table"></param>
+        /// <returns></returns>
+        private static string BuildCreateTableSql(TableInfoModel table)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine($"CREATE TABLE [{table.TableName}] (");
+
+            for (int i = 0; i < table.Columns.Count; i++)
+            {
+                var column = table.Columns[i];
+                sb.Append($" [{column.ColumnName}] {DataTypeProvider.ToSqlTypeString(column.DataType)} ");
+
+                //if (!column.IsNullable)
+                //    sb.Append(" NOT NULL");
+                if(column.IsPrimaryKey)
+                {
+                    sb.AppendLine($" CONSTRAINT [PK_{table.TableName}] PRIMARY KEY ({$"[{column.ColumnName}]"})");
+                }
+
+                if (i < table.Columns.Count - 1)
+                    sb.AppendLine(",");
+                else
+                    sb.AppendLine();
+            }
+
+            sb.AppendLine(");");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Изменяет структуру таблицы
+        /// </summary>
+        /// <param name="oldNameTable"></param>
+        /// <param name="newOrChangeTable"></param>
+        public void ChangeTable(TableInfoModel table)
+        {
+            foreach (var column in table.Columns)
+            {
+                var sql = $@"
+                            SELECT COUNT(*) 
+                            FROM INFORMATION_SCHEMA.COLUMNS 
+                            WHERE TABLE_NAME = @p0
+                            AND COLUMN_NAME = @p1";
+
+                var exists = _myDbContext.Database.SqlQueryRaw<int>(sql, table.TableName, column.ColumnName)
+                                                   .AsEnumerable()
+                                                   .FirstOrDefault() > 0;
+
+                if (!exists)
+                {
+                    var sql2 = BuildAddColumnSql(table.TableName, column);
+                    _myDbContext.Database.ExecuteSqlRaw(sql2);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Строит SQL для добавления колонки
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        private static string BuildAddColumnSql(string tableName, ColumnInfoModel column)
+        {
+            var sql = $"ALTER TABLE [{tableName}] ADD [{column.ColumnName}] {DataTypeProvider.ToSqlTypeString(column.DataType)}";
+
+            if (!column.IsNullable)
+                sql += " NOT NULL";
+
+            return sql;
+        }
+
     }
 
 }

@@ -39,9 +39,11 @@
                    Grid.Column="0"
                    Grid.RowSpan="3">
 
-            <TextBlock Text="Список таблиц"
-                       VerticalAlignment="Bottom"
-                       DockPanel.Dock="Top"/>
+            <Button Content="Обновить писок таблиц"
+                    VerticalAlignment="Bottom"
+                    DockPanel.Dock="Top"
+                    Margin="0 5 5 10"
+                    Command="{Binding UpdateListTablesCommand}"/>
 
             <DataGrid AutoGenerateColumns="False"
                       CanUserAddRows="False"
@@ -65,10 +67,16 @@
                       HorizontalAlignment="Stretch"/>
 
         <!--Правая часть-->
-        <TextBlock Text="Описание таблицы"
-                   Grid.Row="1"
-                   Grid.Column="3"
-                   Margin="5"/>
+        <StackPanel Orientation="Horizontal"
+                    Grid.Row="1"
+                    Grid.Column="3"
+                    Margin="5 0 0 0">
+            <TextBlock Text="Имя таблицы: "
+                       Margin="2.5"/>
+            <TextBlock Text="{Binding SelectedTable.TableName}"
+                       Margin=" 0 2.5"/>
+        </StackPanel>
+
 
         <DataGrid Grid.Row="2"
                   Grid.Column="2"
@@ -106,17 +114,18 @@
 
         <StackPanel Orientation="Horizontal"
                     Grid.Row="0"
-                    Grid.Column="3"
-                    Margin="5">
+                    Grid.Column="3">
 
             <Button Content="Добавить таблицу"
-                    Command="{Binding OpenCreateWindowCommand}"/>
+                    Command="{Binding OpenWindowCreateTableCommand}"
+                    CommandParameter="add"/>
             
             <Button Content="Удалить таблицу"
                     Command="{Binding DeleteTableCommand}"/>
             
             <Button Content="Редакторвать таблицу"
-                    Command="{Binding OpenCreateWindowCommand}"/>
+                    Command="{Binding OpenWindowChangeTableCommand}"
+                    CommandParameter="change"/>
             
         </StackPanel>
         

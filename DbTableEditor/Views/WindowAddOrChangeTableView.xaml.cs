@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using DbTableEditor.ViewModels;
+using System.Windows;
 
 namespace DbTableEditor.Views
 {
@@ -10,6 +11,30 @@ namespace DbTableEditor.Views
         public WindowAddOrChangeTableView()
         {
             InitializeComponent();
+
+            Loaded += Window_Loaded;
+            Unloaded += Window_Unloaded;
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is WindowAddOrChangeTableViewModel vm)
+            {
+                vm.RequestClose += Vm_RequestClose;
+            }
+        }
+
+        private void Window_Unloaded(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is WindowAddOrChangeTableViewModel vm)
+            {
+                vm.RequestClose -= Vm_RequestClose;
+            }
+        }
+
+        private void Vm_RequestClose()
+        {
+            this.Close();
         }
     }
 }

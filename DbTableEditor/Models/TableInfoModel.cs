@@ -1,18 +1,30 @@
-﻿namespace DbTableEditor.Models
+﻿using System.Collections.ObjectModel;
+
+namespace DbTableEditor.Models
 {
     /// <summary>
     /// Информация о таблице
     /// </summary>
-    public class TableInfoModel
+    public class TableInfoModel : BaseModel
     {
+        private string _tableName = string.Empty;
+
         /// <summary>
         /// Название таблицы
         /// </summary>
-        public string TableName { get; set; } = null!;
+        public string TableName 
+        { 
+            get => _tableName; 
+            set 
+            { 
+                _tableName = value; 
+                OnPropertyChanged(); 
+            }
+        }
 
         /// <summary>
         /// Список столбцов
         /// </summary>
-        public List<ColumnInfoModel> Columns { get; set; } = [];
+        public ObservableCollection<ColumnInfoModel> Columns { get; set; } = [];
     }
 }

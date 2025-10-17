@@ -6,9 +6,10 @@
         xmlns:vm="clr-namespace:DbTableEditor.ViewModels"
         
         mc:Ignorable="d"
-        Title="Окно добавления или редактирвоания таблицы" 
-        Height="300" 
-        Width="300" 
+        d:DataContext="{d:DesignInstance Type=vm:WindowAddOrChangeTableViewModel, IsDesignTimeCreatable=True}"
+        Title="{Binding NameWindow}" 
+        Height="350" 
+        Width="350" 
         WindowStartupLocation="CenterScreen">
 
     <Window.Resources>
@@ -30,6 +31,10 @@
                     Value=" 0 2.5"/>
         </Style>
         
+        <Style TargetType="Button">
+            <Setter Property="Padding" 
+                    Value="5 2.5"/>
+        </Style>
     </Window.Resources>
 
     <Grid>
@@ -50,19 +55,75 @@
 
             <TextBox Grid.Row="0"
                      Grid.Column="1"
-                     Text="{Binding NameTable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                     Text="{Binding NewOrChangeTable.TableName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
             <DockPanel Grid.Row="1"
                        Grid.Column="0"
                        Grid.ColumnSpan="2">
-                <DataGrid/>
+                <DataGrid ItemsSource="{Binding Columns}"
+                          AutoGenerateColumns="False"
+                          CanUserSortColumns="False"
+                          CanUserAddRows="False"
+                          SelectedItem="{Binding SelectedRow}">
+
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Имя столбца" 
+                                            Binding="{Binding ColumnName}"
+                                            Width="*" 
+                                            IsReadOnly="False"/>
+
+                        
+                        <DataGridComboBoxColumn Header="Тип данных" 
+                                                SelectedItemBinding="{Binding DataType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                Width="*" 
+                                                IsReadOnly="False">
+                            
+                            <DataGridComboBoxColumn.ElementStyle>
+                                <Style TargetType="ComboBox">
+                                    <Setter Property="ItemsSource"
+                                            Value="{Binding DataContext.DataTypes, RelativeSource={RelativeSource AncestorType=DataGrid}}" />
+                                    <Setter Property="IsHitTestVisible" Value="False"/>
+                                    <Setter Property="Focusable" Value="False"/>
+                                </Style>
+                            </DataGridComboBoxColumn.ElementStyle>
+
+                            <DataGridComboBoxColumn.EditingElementStyle>
+                                <Style TargetType="ComboBox">
+                                    <Setter Property="ItemsSource"
+                                            Value="{Binding DataContext.DataTypes, RelativeSource={RelativeSource AncestorType=DataGrid}}" />
+                                </Style>
+                            </DataGridComboBoxColumn.EditingElementStyle>
+                        </DataGridComboBoxColumn>
+
+                        
+                        <DataGridCheckBoxColumn Header="Первичный ключ" 
+                                                Binding="{Binding IsPrimaryKey, Mode=TwoWay}"
+                                                Width="*" 
+                                                IsReadOnly="False"/>
+                    </DataGrid.Columns>
+                </DataGrid>
             </DockPanel>
 
+            <StackPanel Orientation="Horizontal"
+                        Grid.Row="2"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        HorizontalAlignment="Left">
+                <Button Content="Добавить столбец"
+                        Margin="0 2.5 5 0"
+                        Command="{Binding AddColumnCommand}"/>
+
+                <Button Content="Удалить столбец"
+                        Margin="0 2.5 0 0"
+                        Command="{Binding DeleteColumnCommand}"/>
+            </StackPanel>
+            
             <Button Content="Сохранить"
                     Grid.Row="2"
                     Grid.Column="1"
                     Margin="0 2.5 0 0"
-                    HorizontalAlignment="Right"/>
+                    HorizontalAlignment="Right"
+                    Command="{Binding SaveTableCommand}"/>
 
         </Grid>
     </Grid>
