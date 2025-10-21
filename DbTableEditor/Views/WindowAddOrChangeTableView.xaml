@@ -9,7 +9,7 @@
         d:DataContext="{d:DesignInstance Type=vm:WindowAddOrChangeTableViewModel, IsDesignTimeCreatable=True}"
         Title="{Binding NameWindow}" 
         Height="350" 
-        Width="350" 
+        Width="450" 
         WindowStartupLocation="CenterScreen">
 
     <Window.Resources>
@@ -64,26 +64,29 @@
                           AutoGenerateColumns="False"
                           CanUserSortColumns="False"
                           CanUserAddRows="False"
+                          CanUserDeleteRows="False"
                           SelectedItem="{Binding SelectedRow}">
 
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Имя столбца" 
                                             Binding="{Binding ColumnName}"
-                                            Width="*" 
+                                            Width="0.5*" 
                                             IsReadOnly="False"/>
 
                         
                         <DataGridComboBoxColumn Header="Тип данных" 
                                                 SelectedItemBinding="{Binding DataType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                Width="*" 
+                                                Width="0.3*" 
                                                 IsReadOnly="False">
                             
                             <DataGridComboBoxColumn.ElementStyle>
                                 <Style TargetType="ComboBox">
                                     <Setter Property="ItemsSource"
                                             Value="{Binding DataContext.DataTypes, RelativeSource={RelativeSource AncestorType=DataGrid}}" />
-                                    <Setter Property="IsHitTestVisible" Value="False"/>
-                                    <Setter Property="Focusable" Value="False"/>
+                                    <Setter Property="IsHitTestVisible" 
+                                            Value="False"/>
+                                    <Setter Property="Focusable" 
+                                            Value="False"/>
                                 </Style>
                             </DataGridComboBoxColumn.ElementStyle>
 
@@ -98,7 +101,7 @@
                         
                         <DataGridCheckBoxColumn Header="Первичный ключ" 
                                                 Binding="{Binding IsPrimaryKey, Mode=TwoWay}"
-                                                Width="*" 
+                                                Width="0.2*" 
                                                 IsReadOnly="False"/>
                     </DataGrid.Columns>
                 </DataGrid>
@@ -123,6 +126,7 @@
                     Grid.Column="1"
                     Margin="0 2.5 0 0"
                     HorizontalAlignment="Right"
+                    Visibility="{Binding IsAddTable}"
                     Command="{Binding SaveTableCommand}"/>
 
         </Grid>

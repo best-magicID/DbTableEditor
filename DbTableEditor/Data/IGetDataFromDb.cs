@@ -32,11 +32,10 @@ namespace DbTableEditor.Data
         /// <param name="newOrChangeTable"></param>
         bool CreateTable(TableInfoModel newOrChangeTable);
 
-        /// <summary>
-        /// Изменяет структуру таблицы
-        /// </summary>
-        /// <param name="oldNameTable"></param>
-        /// <param name="newOrChangeTable"></param>
-        void ChangeTable(TableInfoModel newOrChangeTable);
+
+        bool AddColumn(TableInfoModel table, ColumnInfoModel column);
+
+        bool DeleteColumn(TableInfoModel table, ColumnInfoModel column);
+
     }
 }

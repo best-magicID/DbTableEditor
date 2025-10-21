@@ -4,6 +4,7 @@ using DbTableEditor.Models;
 using DbTableEditor.Services;
 using SalesAnalysis.Commands;
 using System.Collections.ObjectModel;
+using System.Windows;
 
 namespace DbTableEditor.ViewModels
 {
@@ -55,6 +56,17 @@ namespace DbTableEditor.ViewModels
         }
 
         public IReadOnlyList<SqlDataType> DataTypes => DataTypeProvider.CommonTypes;
+
+        public Visibility IsAddTable
+        {
+            get
+            {
+                if(_isChangeTable == false)
+                    return Visibility.Visible;
+                else
+                    return Visibility.Collapsed;
+            }
+        }
 
         #region Команды
 
@@ -117,7 +129,7 @@ namespace DbTableEditor.ViewModels
             {
                 NameWindow = "Окно редактирования таблицы";
                 NewOrChangeTable = table;
-                Columns = new ObservableCollection<ColumnInfoModel>(NewOrChangeTable.Columns);
+                Columns = NewOrChangeTable.Columns;
             }
         }
 
@@ -130,7 +142,38 @@ namespace DbTableEditor.ViewModels
             if (SelectedRow == null)
                 return;
 
-            Columns.Remove(SelectedRow);
+            if(_isChangeTable)
+            {
+                var result = GeneralMethods.ShowSelectionWindow($"Вы действительно хотите удалить колонку {SelectedRow.ColumnName}?");
+                if (result == MessageBoxResult.No)
+                    return;
+
+                if (SelectedRow.IsPrimaryKey)
+                {
+                    GeneralMethods.ShowNotification("Нельзя удалить колонку, являющуюся первичным ключом.");
+                    return;
+                }
+                else if(_dbService != null && _dbService.CheckConnect() && NewOrChangeTable != null)
+                {
+                    var resultDb = _dbService.DeleteColumn(NewOrChangeTable, SelectedRow);
+
+                    if (resultDb)
+                    {
+                        NewOrChangeTable.Columns.Remove(SelectedRow);
+                        GeneralMethods.ShowNotification("Колонка успешно удалена.");
+                        return;
+                    }
+                    else
+                    {
+                        GeneralMethods.ShowNotification("Ошибка удаления колонки.");
+                        return;
+                    }
+                }
+            }
+            else
+            {
+                Columns.Remove(SelectedRow);
+            }
         }
 
         /// <summary>
@@ -149,7 +192,29 @@ namespace DbTableEditor.ViewModels
         /// <param name="parameter"></param>
         private void AddColumnCommand_Execute(object parameter)
         {
-            Columns.Add(new ColumnInfoModel { ColumnName = "", DataType = SqlDataType.NVarChar, IsNullable = false, IsPrimaryKey= false });
+            if (_isChangeTable && _dbService != null && _dbService.CheckConnect() && NewOrChangeTable != null)
+            {
+                var newNumber = NewOrChangeTable.Columns.Count + 1;
+                var newColumn = new ColumnInfoModel { ColumnName = $"Новый столбец {newNumber}", DataType = SqlDataType.NVarChar, IsNullable = false, IsPrimaryKey = false };
+
+                var result = _dbService.AddColumn(NewOrChangeTable, newColumn);
+
+                if (result)
+                {
+                    NewOrChangeTable.Columns.Add(newColumn);
+                    GeneralMethods.ShowNotification("Колонка успешно добавлена.");
+                    return;
+                }
+                else
+                {
+                    GeneralMethods.ShowNotification("Ошибка добавления колонки.");
+                    return;
+                }
+            }
+            else
+            {
+                Columns.Add(new ColumnInfoModel { ColumnName = "Новый столбец", DataType = SqlDataType.NVarChar, IsNullable = true, IsPrimaryKey = false });
+            }
         }
 
         /// <summary>
@@ -163,6 +228,7 @@ namespace DbTableEditor.ViewModels
                 NewOrChangeTable.Columns = Columns;
 
                 int countPrimaryKey = 0;    
+
                 foreach (var col in NewOrChangeTable.Columns)
                 {
                     if (string.IsNullOrWhiteSpace(col.ColumnName))
@@ -185,17 +251,11 @@ namespace DbTableEditor.ViewModels
                         //}
                     }
                 }
+
                 if (_dbService != null && _dbService.CheckConnect())
                 {
-                    bool result = false;
-                    if (!_isChangeTable)
-                    {
-                        result =_dbService.CreateTable(NewOrChangeTable);
-                    }
-                    else
-                    {
-                        /*result = */_dbService.ChangeTable(NewOrChangeTable);
-                    }
+                    var result =_dbService.CreateTable(NewOrChangeTable);
+
                     if (result)
                     {
                         GeneralMethods.ShowNotification("Таблица успешно сохранена.");

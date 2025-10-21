@@ -181,7 +181,6 @@ namespace DbTableEditor.ViewModels
                 GeneralMethods.ShowNotification("Ошибка окна.\r\n\r\n" + ex.Message);
             }
             
-
             // После закрытия окна обновить список таблиц
         }
 
