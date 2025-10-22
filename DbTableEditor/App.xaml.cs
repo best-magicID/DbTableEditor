@@ -34,6 +34,7 @@ namespace DbTableEditor
                         options.UseSqlServer(context.Configuration.GetConnectionString("DefaultConnection")));
 
                     services.AddTransient<IGetDataFromDb, OperationsDb>();
+                    services.AddTransient<IChangeDataFromDb, OperationsDb>();
 
                     // Регистрируем ViewModels
                     services.AddTransient<MainViewModel>();

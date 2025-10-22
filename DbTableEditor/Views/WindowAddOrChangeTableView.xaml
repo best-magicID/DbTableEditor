@@ -4,6 +4,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:DbTableEditor.ViewModels"
+        xmlns:behaviors1="http://schemas.microsoft.com/xaml/behaviors"
+        xmlns:behaviors2="clr-namespace:DbTableEditor.Behaviors"
         
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:WindowAddOrChangeTableViewModel, IsDesignTimeCreatable=True}"
@@ -55,18 +57,29 @@
 
             <TextBox Grid.Row="0"
                      Grid.Column="1"
-                     Text="{Binding NewOrChangeTable.TableName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                     Text="{Binding NewOrChangeTable.TableName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                <behaviors1:Interaction.Triggers>
+                    <behaviors1:EventTrigger EventName="LostFocus">
+                        <behaviors1:InvokeCommandAction Command="{Binding TextBoxLostFocusCommand}" />
+                    </behaviors1:EventTrigger>
+                </behaviors1:Interaction.Triggers>
+            </TextBox>
 
             <DockPanel Grid.Row="1"
                        Grid.Column="0"
                        Grid.ColumnSpan="2">
+
                 <DataGrid ItemsSource="{Binding Columns}"
                           AutoGenerateColumns="False"
                           CanUserSortColumns="False"
                           CanUserAddRows="False"
                           CanUserDeleteRows="False"
                           SelectedItem="{Binding SelectedRow}">
-
+                    
+                    <behaviors1:Interaction.Behaviors>
+                        <behaviors2:DataGridCellLostFocusBehavior Command="{Binding DataGridLostFocusCommand}" />
+                    </behaviors1:Interaction.Behaviors>
+                    
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Имя столбца" 
                                             Binding="{Binding ColumnName}"

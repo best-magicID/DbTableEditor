@@ -11,7 +11,7 @@ namespace DbTableEditor.Data
     /// <summary>
     /// Операции с БД
     /// </summary>
-    public class OperationsDb : IGetDataFromDb
+    public class OperationsDb : IGetDataFromDb, IChangeDataFromDb
     {
         private readonly MyDbContext _myDbContext;
 
@@ -211,7 +211,12 @@ namespace DbTableEditor.Data
             return sb.ToString();
         }
 
-
+        /// <summary>
+        /// Добавить столбец в таблицу в БД
+        /// </summary>
+        /// <param name="table"></param>
+        /// <param name="column"></param>
+        /// <returns></returns>
         public bool AddColumn(TableInfoModel table, ColumnInfoModel column)
         {
             try
@@ -234,6 +239,12 @@ namespace DbTableEditor.Data
             }
         }
 
+        /// <summary>
+        /// Удалить столбец из таблицы в БД
+        /// </summary>
+        /// <param name="table"></param>
+        /// <param name="column"></param>
+        /// <returns></returns>
         public bool DeleteColumn(TableInfoModel table, ColumnInfoModel column)
         {
             try
@@ -276,146 +287,59 @@ namespace DbTableEditor.Data
         }
 
         /// <summary>
-        /// Строит SQL для добавления колонки
+        /// Изменить имя таблицы в БД
         /// </summary>
-        /// <param name="tableName"></param>
-        /// <param name="column"></param>
+        /// <param name="oldNameTable"></param>
+        /// <param name="newOrChangeTable"></param>
         /// <returns></returns>
-        private static string BuildSqlQuery(_typeChangeTable typeChangeTable, string tableName, ColumnInfoModel column)
+        public bool ChangeNameTable(string oldNameTable, TableInfoModel newOrChangeTable)
         {
-            var sql = string.Empty;
+            try
+            {
+                if (TableExists(newOrChangeTable.TableName))
+                {
+                    GeneralMethods.ShowNotification($"Таблица с именем '{newOrChangeTable.TableName}' уже существует.");
+                    return false;
+                }
 
-            if (typeChangeTable == _typeChangeTable.AddColumn)
-            {
-                sql = $"ALTER TABLE [{tableName}] ADD [{column.ColumnName}] {DataTypeProvider.ToSqlTypeString(column.DataType)}";
-                return sql;
+                var sql = $"EXEC sp_rename '{oldNameTable}', '{newOrChangeTable.TableName}'";
+                _myDbContext.Database.ExecuteSqlRaw(sql);
+                return true;
             }
-            else if(typeChangeTable == _typeChangeTable.DeleteColumn)
+            catch (Exception ex)
             {
-                sql = $"ALTER TABLE [{tableName}] DROP COLUMN [{column.ColumnName}]";
-                return sql;
+                GeneralMethods.ShowNotification("Ошибка при изменении имени таблицы.\r\n\r\n" + ex.Message);
+                return false;
             }
-            else if(typeChangeTable == _typeChangeTable.ChangeNameColumn)
-            {
-                sql = $"EXEC sp_rename '{tableName}.{column.ColumnName}', '{column.ColumnName}_New', 'COLUMN'";
-                return sql;
-            }
-            else if(typeChangeTable == _typeChangeTable.ChangeTypeColumn)
-            {
-                sql = $"ALTER TABLE [{tableName}] ALTER COLUMN [{column.ColumnName}] {DataTypeProvider.ToSqlTypeString(column.DataType)}";
-                return sql;
-            }
-            else if(typeChangeTable == _typeChangeTable.ChangeNameTable)
-            {
-                sql = $"EXEC sp_rename '{tableName}', '{tableName}_New'";
-                return sql;
-            }
-            else if(typeChangeTable == _typeChangeTable.ChangePrimaryKey)
-            {
-                // Пример SQL для изменения первичного ключа можно добавить здесь
-                throw new NotImplementedException("Изменение первичного ключа не реализовано.");
-            }
-
-            
-            throw new NotImplementedException("Тип изменения таблицы не реализован.");
-
-
         }
 
+        /// <summary>
+        /// Изменение имени столбца в БД
+        /// </summary>
+        /// <param name="table"></param>
+        /// <param name="oldColumnName"></param>
+        /// <param name="newNameColumn"></param>
+        /// <returns></returns>
+        public bool ChangeNameColumn(TableInfoModel table, string oldColumnName, string newNameColumn)
+        {
+            try
+            {
+                if (ColumnExists(table.TableName, newNameColumn))
+                {
+                    GeneralMethods.ShowNotification($"Колонка с именем '{newNameColumn}' уже существует.");
+                    return false;
+                }
 
-
-
-
-
-
-        //private void ChangeTableStructure(string oldTableName, TableInfoModel newTable)
-        //{
-        //    // Переименование таблицы, если имя изменилось
-        //    if (oldTableName != newTable.TableName)
-        //    {
-        //        RenameTable(oldTableName, newTable.TableName);
-        //    }
-        //    // Получение текущих колонок таблицы
-        //    var currentTable = GetTablesStructure().FirstOrDefault(t => t.TableName == newTable.TableName);
-        //    if (currentTable == null)
-        //    {
-        //        throw new InvalidOperationException($"Таблица '{newTable.TableName}' не найдена в базе данных.");
-        //    }
-        //    // Обновление колонок таблицы
-        //    UpdateTableColumns(newTable.TableName, currentTable.Columns, newTable.Columns);
-        //}
-
-        //private void RenameTable(string oldTableName, string newTableName)
-        //{
-        //    var sql = $"EXEC sp_rename '{oldTableName}', '{newTableName}'";
-        //    _myDbContext.Database.ExecuteSqlRaw(sql);
-        //}
-
-        //private void UpdateTableColumns(string tableName, List<ColumnInfoModel> oldColumns, List<ColumnInfoModel> newColumns)
-        //{
-        //    // Удаление колонок
-        //    foreach (var oldColumn in oldColumns)
-        //    {
-        //        if (!newColumns.Any(c => c.ColumnName == oldColumn.ColumnName))
-        //        {
-        //            DeleteColumn(tableName, oldColumn.ColumnName);
-        //        }
-        //    }
-        //    // Добавление и изменение колонок
-        //    foreach (var newColumn in newColumns)
-        //    {
-        //        var oldColumn = oldColumns.FirstOrDefault(c => c.ColumnName == newColumn.ColumnName);
-        //        if (oldColumn == null)
-        //        {
-        //            AddColumn(tableName, newColumn);
-        //        }
-        //        else
-        //        {
-        //            ModifyColumn(tableName, oldColumn, newColumn);
-        //        }
-        //    }
-        //}
-
-        //private void ModifyColumn(string tableName, ColumnInfoModel oldColumn, ColumnInfoModel newColumn)
-        //{
-        //    if (oldColumn.ColumnName != newColumn.ColumnName)
-        //    {
-        //        RenameColumn(tableName, oldColumn.ColumnName, newColumn.ColumnName);
-        //    }
-        //    if (oldColumn.DataType != newColumn.DataType)
-        //    {
-        //        ChangeColumnType(tableName, newColumn.ColumnName, newColumn.DataType);
-        //    }
-        //    // Дополнительные изменения (например, изменение NULL/NOT NULL) можно добавить здесь
-        //}
-
-        //private bool DeleteColumn(string tableName, string columnName)
-        //{
-        //    var sql = $"ALTER TABLE [{tableName}] DROP COLUMN [{columnName}]";
-        //     return _myDbContext.Database.ExecuteSqlRaw(sql);
-        //}
-
-        //private void AddColumn(string tableName, ColumnInfoModel column)
-        //{
-        //    var sql = BuildSqlQuery(tableName, column);
-        //    _myDbContext.Database.ExecuteSqlRaw(sql);
-        //}
-
-        //private void ChangeColumnType(string tableName, string columnName, SqlDataType newDataType)
-        //{
-        //    var sql = $"ALTER TABLE [{tableName}] ALTER COLUMN [{columnName}] {DataTypeProvider.ToSqlTypeString(newDataType)}";
-        //    _myDbContext.Database.ExecuteSqlRaw(sql);
-        //}
-
-        //private void RenameColumn(string tableName, string oldColumnName, string newColumnName)
-        //{
-        //    var sql = $"EXEC sp_rename '{tableName}.{oldColumnName}', '{newColumnName}', 'COLUMN'";
-        //    _myDbContext.Database.ExecuteSqlRaw(sql);
-        //}
-
-
-
-        
+                var sql = $"EXEC sp_rename '{table.TableName}.{oldColumnName}', '{newNameColumn}', 'COLUMN'";
+                _myDbContext.Database.ExecuteSqlRaw(sql);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                GeneralMethods.ShowNotification("Ошибка при создании таблицы.\r\n\r\n" + ex.Message);
+                return false;
+            }
+        }
 
     }
 

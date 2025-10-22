@@ -5,6 +5,7 @@ using DbTableEditor.Services;
 using SalesAnalysis.Commands;
 using System.Collections.ObjectModel;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace DbTableEditor.ViewModels
 {
@@ -12,13 +13,13 @@ namespace DbTableEditor.ViewModels
     {
         #region ПОЛЯ И СВОЙСТВА
 
-        private readonly IGetDataFromDb? _dbService;
+        private readonly IChangeDataFromDb _iChangeData;
+
+        private readonly bool _isChangeTable = false;
 
         private string _nameWindow = "Окно добавления или редактирования таблицы";
 
-        private bool _isChangeTable = false;
-
-        private TableInfoModel? _newOrChangeTable = null!;
+        private TableInfoModel _newOrChangeTable = new();
         private ColumnInfoModel? _selectedRow = null;
 
         public event Action? RequestClose;
@@ -35,16 +36,20 @@ namespace DbTableEditor.ViewModels
         /// <summary>
         /// Выбранная таблица
         /// </summary>
-        public TableInfoModel? NewOrChangeTable 
+        public TableInfoModel NewOrChangeTable 
         { 
             get => _newOrChangeTable; 
             set => SetProperty(ref _newOrChangeTable, value);
         }
 
+        public string OldNameTable { get; set; } = string.Empty;
+
         /// <summary>
         /// Колонки таблицы
         /// </summary>
         public ObservableCollection<ColumnInfoModel> Columns { get; set; } = [];
+
+        public ObservableCollection<ColumnInfoModel> OldColumns { get; set; } = [];
 
         /// <summary>
         /// Выбранная колонка
@@ -72,7 +77,10 @@ namespace DbTableEditor.ViewModels
 
         public RaiseCommand? AddColumnCommand { get; private set; }
         public RaiseCommand? DeleteColumnCommand { get; private set; }
-        public RaiseCommand? SaveTableCommand { get; set; }
+        public RaiseCommand? SaveTableCommand { get; private set; }
+        public RaiseCommand? TextBoxLostFocusCommand { get; private set; }
+        public RaiseCommand? DataGridLostFocusCommand { get; private set; }
+
 
         #endregion
 
@@ -88,15 +96,15 @@ namespace DbTableEditor.ViewModels
 
         }
 
-        public WindowAddOrChangeTableViewModel(IGetDataFromDb dbService, string parameter, TableInfoModel? table = null)
+        public WindowAddOrChangeTableViewModel(IChangeDataFromDb iChangeData, string parameter, TableInfoModel? table = null)
         {
-            _dbService = dbService;
+            _iChangeData = iChangeData;
 
             _isChangeTable = parameter == "change";
 
             LoadCommands();
 
-            ChangeActionWindow(parameter, table);
+            ChangeActionWindow(table);
         }
 
         #endregion
@@ -112,24 +120,33 @@ namespace DbTableEditor.ViewModels
             DeleteColumnCommand = new RaiseCommand(DeleteColumnCommand_Execute, DeleteColumnCommand_CanExecute);
 
             SaveTableCommand = new RaiseCommand(SaveTableCommand_Execute);
+
+            TextBoxLostFocusCommand = new RaiseCommand(TextBoxLostFocusCommand_Execute, TextBoxLostFocusCommand_CanExecute);
+            DataGridLostFocusCommand = new RaiseCommand(DataGridLostFocusCommand_Execute, DataGridLostFocusCommand_CanExecute);
         }
 
         /// <summary>
         /// Изменение назначения окна в зависимости от параметров
         /// </summary>
         /// <param name="parameter"></param>
-        private void ChangeActionWindow(string parameter, TableInfoModel? table = null)
+        private void ChangeActionWindow(TableInfoModel? table = null)
         {
             if (!_isChangeTable)
             {
                 NameWindow = "Окно добавления таблицы";
-                NewOrChangeTable = new TableInfoModel();
             }
-            else if (_isChangeTable && table != null)
+            else
             {
                 NameWindow = "Окно редактирования таблицы";
-                NewOrChangeTable = table;
-                Columns = NewOrChangeTable.Columns;
+                if (table != null)
+                {
+                    NewOrChangeTable = table;
+
+                    Columns = NewOrChangeTable.Columns;
+                    OldColumns = new ObservableCollection<ColumnInfoModel>(NewOrChangeTable.Columns);
+
+                    OldNameTable = NewOrChangeTable.TableName;
+                }
             }
         }
 
@@ -153,9 +170,9 @@ namespace DbTableEditor.ViewModels
                     GeneralMethods.ShowNotification("Нельзя удалить колонку, являющуюся первичным ключом.");
                     return;
                 }
-                else if(_dbService != null && _dbService.CheckConnect() && NewOrChangeTable != null)
+                else if(_iChangeData.CheckConnect())
                 {
-                    var resultDb = _dbService.DeleteColumn(NewOrChangeTable, SelectedRow);
+                    var resultDb = _iChangeData.DeleteColumn(NewOrChangeTable, SelectedRow);
 
                     if (resultDb)
                     {
@@ -192,12 +209,12 @@ namespace DbTableEditor.ViewModels
         /// <param name="parameter"></param>
         private void AddColumnCommand_Execute(object parameter)
         {
-            if (_isChangeTable && _dbService != null && _dbService.CheckConnect() && NewOrChangeTable != null)
+            if (_isChangeTable && _iChangeData.CheckConnect())
             {
                 var newNumber = NewOrChangeTable.Columns.Count + 1;
                 var newColumn = new ColumnInfoModel { ColumnName = $"Новый столбец {newNumber}", DataType = SqlDataType.NVarChar, IsNullable = false, IsPrimaryKey = false };
 
-                var result = _dbService.AddColumn(NewOrChangeTable, newColumn);
+                var result = _iChangeData.AddColumn(NewOrChangeTable, newColumn);
 
                 if (result)
                 {
@@ -223,7 +240,7 @@ namespace DbTableEditor.ViewModels
         /// <param name="parameter"></param>
         private void SaveTableCommand_Execute(object parameter)
         {
-            if (NewOrChangeTable != null && !string.IsNullOrWhiteSpace(NewOrChangeTable.TableName))
+            if (!string.IsNullOrWhiteSpace(NewOrChangeTable.TableName))
             {
                 NewOrChangeTable.Columns = Columns;
 
@@ -252,9 +269,9 @@ namespace DbTableEditor.ViewModels
                     }
                 }
 
-                if (_dbService != null && _dbService.CheckConnect())
+                if (_iChangeData.CheckConnect())
                 {
-                    var result =_dbService.CreateTable(NewOrChangeTable);
+                    var result =_iChangeData.CreateTable(NewOrChangeTable);
 
                     if (result)
                     {
@@ -271,6 +288,116 @@ namespace DbTableEditor.ViewModels
             {
                 GeneralMethods.ShowNotification("Ошибка сохранения таблицы. Нет названия таблицы");
                 return;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="parameter"></param>
+        /// <returns></returns>
+        private bool TextBoxLostFocusCommand_CanExecute(object parameter)
+        {
+            return _isChangeTable && OldNameTable != NewOrChangeTable.TableName;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="parameter"></param>
+        private void TextBoxLostFocusCommand_Execute(object parameter)
+        {
+            if (_isChangeTable)
+            {
+                if (string.IsNullOrWhiteSpace(NewOrChangeTable.TableName))
+                {
+                    NewOrChangeTable.TableName = OldNameTable;
+                    GeneralMethods.ShowNotification("Нельзя оставлять поле пустым.");
+                    return;
+                }
+
+                var result1 = GeneralMethods.ShowSelectionWindow($"Изменить имя таблицы с '{OldNameTable}' на '{NewOrChangeTable.TableName}'?");
+
+                if (result1 == MessageBoxResult.Yes)
+                {
+                    var result2 = _iChangeData.ChangeNameTable(OldNameTable, NewOrChangeTable);
+                    if (result2)
+                    {
+                        OldNameTable = NewOrChangeTable?.TableName ?? OldNameTable;
+                        GeneralMethods.ShowNotification($"Имя таблицы изменено на '{NewOrChangeTable?.TableName}'.");
+                    }
+                }
+                else
+                {
+                    NewOrChangeTable.TableName = OldNameTable;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="parameter"></param>
+        /// <returns></returns>
+        private bool DataGridLostFocusCommand_CanExecute(object parameter)
+        {
+            return _isChangeTable;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="parameter"></param>
+        private void DataGridLostFocusCommand_Execute(object parameter)
+        {
+            if (_isChangeTable)
+            {
+                if (parameter is not DataGridCellEditEndingEventArgs e)
+                    return;
+
+                // Получаем изменяемую колонку и строку
+                var editedItem = (ColumnInfoModel)e.Row.Item;
+                var columnHeader = e.Column.Header?.ToString();
+
+                if (e.EditingElement is TextBox textBox)
+                {
+                    var result = GeneralMethods.ShowSelectionWindow($"Изменить имя столбца с '{editedItem.ColumnName}' на '{textBox.Text}'?");
+                    if(result == MessageBoxResult.Yes)
+                    {
+                        _iChangeData.ChangeNameColumn(NewOrChangeTable, editedItem.ColumnName, textBox.Text);
+                        GeneralMethods.ShowNotification("Имя столбца изменено.");
+                    }
+                    else
+                    {
+                        editedItem.ColumnName = editedItem.ColumnName;
+                    }
+                }
+                else if (e.EditingElement is ComboBox comboBox)
+                {
+                    var result = GeneralMethods.ShowSelectionWindow($"Изменить тип столбца с '{editedItem.DataType}' на '{comboBox.SelectedValue}'?");
+                    if (result == MessageBoxResult.Yes)
+                    {
+
+                        GeneralMethods.ShowNotification("Тип столбца изменен.");
+                    }
+                    else
+                    {
+
+                    }
+                }
+                else if (e.EditingElement is CheckBox checkBox)
+                {
+                    var result = GeneralMethods.ShowSelectionWindow($"Изменить значение первичного ключа с '{editedItem.IsPrimaryKey}' на '{checkBox.IsChecked}'?");
+                    if (result == MessageBoxResult.Yes)
+                    {
+
+                        GeneralMethods.ShowNotification("Значение первичного ключа изменено.");
+                    }
+                    else
+                    {
+                        editedItem.IsPrimaryKey = editedItem.IsPrimaryKey;
+                    }
+                }
             }
         }
 

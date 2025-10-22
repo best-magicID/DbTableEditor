@@ -19,23 +19,5 @@ namespace DbTableEditor.Data
         /// Получение структур таблиц
         /// </summary>
         List<TableInfoModel> GetTablesStructure();
-
-        /// <summary>
-        /// Удаление выбранной таблицы
-        /// </summary>
-        /// <param name="tableName"></param>
-        void DeleteTable(string tableName);
-
-        /// <summary>
-        /// Создание новой таблицы
-        /// </summary>
-        /// <param name="newOrChangeTable"></param>
-        bool CreateTable(TableInfoModel newOrChangeTable);
-
-
-        bool AddColumn(TableInfoModel table, ColumnInfoModel column);
-
-        bool DeleteColumn(TableInfoModel table, ColumnInfoModel column);
-
     }
 }

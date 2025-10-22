@@ -15,7 +15,8 @@ namespace DbTableEditor.ViewModels
     {
         #region ПОЛЯ И СВОЙСТВА
 
-        private readonly IGetDataFromDb _dbService;
+        private readonly IGetDataFromDb _iGetData;
+        private readonly IChangeDataFromDb _iChangeData;
         private readonly IWindowFactory _windowFactory;
 
         private TableInfoModel? _selectedTable = null!;
@@ -69,12 +70,13 @@ namespace DbTableEditor.ViewModels
 
         }
 
-        public MainViewModel(IGetDataFromDb iDbService, IWindowFactory iWindowFactory)
+        public MainViewModel(IGetDataFromDb iGetData, IChangeDataFromDb iChangeData, IWindowFactory iWindowFactory)
         {
-            _dbService = iDbService;
+            _iGetData = iGetData;
+            _iChangeData = iChangeData;
             _windowFactory = iWindowFactory;
 
-            if (_dbService.CheckConnect())
+            if (_iGetData.CheckConnect())
             {
                 LoadCommands();
                 //LoadNamesTables();
@@ -106,7 +108,7 @@ namespace DbTableEditor.ViewModels
         /// </summary>
         public void LoadNamesTables()
         {
-            var tables = _dbService.GetTables();
+            var tables = _iGetData.GetTables();
 
             ListTables.Clear();
             foreach (var nameTable in tables)
@@ -120,7 +122,7 @@ namespace DbTableEditor.ViewModels
         /// </summary>
         public void LoadStructureTables()
         {
-            var structureTables = _dbService.GetTablesStructure();
+            var structureTables = _iGetData.GetTablesStructure();
 
             ListStructureTables.Clear();
             foreach (var table in structureTables)
@@ -152,7 +154,7 @@ namespace DbTableEditor.ViewModels
             if (result == System.Windows.MessageBoxResult.No)
                 return;
 
-            _dbService.DeleteTable(SelectedTable.TableName);
+            _iChangeData.DeleteTable(SelectedTable.TableName);
 
             ListStructureTables.Remove(SelectedTable);
             SelectedTable = null;
@@ -206,6 +208,10 @@ namespace DbTableEditor.ViewModels
             }
         }
 
+        /// <summary>
+        /// Обновить список таблиц
+        /// </summary>
+        /// <param name="parameter"></param>
         private void UpdateListTablesCommand_Execute(object parameter)
         {
             LoadStructureTables();
