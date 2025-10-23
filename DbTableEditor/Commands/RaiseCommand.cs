@@ -1,6 +1,6 @@
 using System.Windows.Input;
 
-namespace SalesAnalysis.Commands
+namespace DbTableEditor.Commands
 {
     /// <summary>
     /// Вызов команды

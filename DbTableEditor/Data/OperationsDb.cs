@@ -3,6 +3,7 @@ using DbTableEditor.Models;
 using DbTableEditor.Services;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Data;
 using System.Text;
 
@@ -316,27 +317,112 @@ namespace DbTableEditor.Data
         /// <summary>
         /// Изменение имени столбца в БД
         /// </summary>
-        /// <param name="table"></param>
+        /// <param name="tableName"></param>
         /// <param name="oldColumnName"></param>
         /// <param name="newNameColumn"></param>
         /// <returns></returns>
-        public bool ChangeNameColumn(TableInfoModel table, string oldColumnName, string newNameColumn)
+        public bool ChangeNameColumn(string tableName, string oldColumnName, string newNameColumn)
         {
             try
             {
-                if (ColumnExists(table.TableName, newNameColumn))
+                if (ColumnExists(tableName, newNameColumn))
                 {
                     GeneralMethods.ShowNotification($"Колонка с именем '{newNameColumn}' уже существует.");
                     return false;
                 }
 
-                var sql = $"EXEC sp_rename '{table.TableName}.{oldColumnName}', '{newNameColumn}', 'COLUMN'";
+                var sql = $"EXEC sp_rename '{tableName}.{oldColumnName}', '{newNameColumn}', 'COLUMN'";
                 _myDbContext.Database.ExecuteSqlRaw(sql);
                 return true;
             }
             catch (Exception ex)
             {
-                GeneralMethods.ShowNotification("Ошибка при создании таблицы.\r\n\r\n" + ex.Message);
+                GeneralMethods.ShowNotification("Ошибка при изменении имени столбца.\r\n\r\n" + ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Изменение типа данных столбца в БД
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="columnName"></param>
+        /// <param name="newTypeColumn"></param>
+        /// <returns></returns>
+        public bool ChangeTypeColumn(string tableName, string columnName, SqlDataType newTypeColumn)
+        {
+            try
+            {
+                var sql = $"ALTER TABLE [{tableName}] ALTER COLUMN [{columnName}] {DataTypeProvider.ToSqlTypeString(newTypeColumn)};";
+                _myDbContext.Database.ExecuteSqlRaw(sql);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                GeneralMethods.ShowNotification("Ошибка при изменении типа данных столбца.\r\n\r\n" + ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Изменение признака "Первичный ключ" столбца в БД
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="columnName"></param>
+        /// <param name="makePrimaryKey"></param>
+        /// <returns></returns>
+        public bool ChangePrimaryKeyColumn(string tableName, string columnName, bool makePrimaryKey)
+        {
+            try
+            {
+                string checkPkSql = @"
+                                    SELECT COUNT(*) 
+                                    FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+                                    JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu 
+                                        ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
+                                    WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
+                                        AND tc.TABLE_NAME = {0}
+                                        AND kcu.COLUMN_NAME = {1};";
+
+                int isPrimaryKey = _myDbContext.Database.SqlQueryRaw<int>(checkPkSql, tableName, columnName)
+                                                        .AsEnumerable()
+                                                        .FirstOrDefault();
+
+                if (makePrimaryKey && isPrimaryKey == 0)
+                {
+                    string pkName = $"PK_{tableName}_{columnName}";
+                    string addSql = $"ALTER TABLE [{tableName}] ADD CONSTRAINT [{pkName}] PRIMARY KEY ([{columnName}]);";
+                    _myDbContext.Database.ExecuteSqlRaw(addSql);
+                    return true;
+                }
+                else if (!makePrimaryKey && isPrimaryKey > 0)
+                {
+                    // Найдём имя существующего PK
+                    string getConstraintSql = @"
+                                                SELECT tc.CONSTRAINT_NAME 
+                                                FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+                                                JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu 
+                                                    ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
+                                                WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
+                                                    AND tc.TABLE_NAME = {0}
+                                                    AND kcu.COLUMN_NAME = {1};";
+
+                    string? constraintName = _myDbContext.Database.SqlQueryRaw<string>(getConstraintSql, tableName, columnName)
+                                                                  .AsEnumerable()
+                                                                  .FirstOrDefault();
+
+                    if (!string.IsNullOrEmpty(constraintName))
+                    {
+                        string dropSql = $"ALTER TABLE [{tableName}] DROP CONSTRAINT [{constraintName}];";
+                        _myDbContext.Database.ExecuteSqlRaw(dropSql);
+                        
+                    }
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                GeneralMethods.ShowNotification("Ошибка при изменении типа данных столбца.\r\n\r\n" + ex.Message);
                 return false;
             }
         }

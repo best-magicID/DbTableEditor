@@ -75,7 +75,7 @@
                           CanUserAddRows="False"
                           CanUserDeleteRows="False"
                           SelectedItem="{Binding SelectedRow}">
-                    
+
                     <behaviors1:Interaction.Behaviors>
                         <behaviors2:DataGridCellLostFocusBehavior Command="{Binding DataGridLostFocusCommand}" />
                     </behaviors1:Interaction.Behaviors>

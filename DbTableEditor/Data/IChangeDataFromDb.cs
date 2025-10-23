@@ -53,6 +53,24 @@ namespace DbTableEditor.Data
         /// <param name="oldColumnName"></param>
         /// <param name="newNameColumn"></param>
         /// <returns></returns>
-        bool ChangeNameColumn(TableInfoModel table, string oldColumnName, string column);
+        bool ChangeNameColumn(string tableName, string oldColumnName, string newNameColumn);
+
+        /// <summary>
+        /// Изменение типа данных столбца в БД
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="columnName"></param>
+        /// <param name="newTypeColumn"></param>
+        /// <returns></returns>
+        bool ChangeTypeColumn(string tableName, string columnName, SqlDataType newTypeColumn);
+
+        /// <summary>
+        /// Изменение признака "Первичный ключ" столбца в БД
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="columnName"></param>
+        /// <param name="makePrimaryKey"></param>
+        /// <returns></returns>
+        bool ChangePrimaryKeyColumn(string tableName, string columnName, bool makePrimaryKey);
     }
 }

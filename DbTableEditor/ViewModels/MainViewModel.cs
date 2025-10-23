@@ -1,9 +1,9 @@
-﻿using DbTableEditor.Data;
+﻿using DbTableEditor.Commands;
+using DbTableEditor.Data;
 using DbTableEditor.Helpers;
 using DbTableEditor.Models;
 using DbTableEditor.Services;
 using DbTableEditor.Views;
-using SalesAnalysis.Commands;
 using System.Collections.ObjectModel;
 
 namespace DbTableEditor.ViewModels

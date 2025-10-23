@@ -1,11 +1,11 @@
-﻿using DbTableEditor.Data;
+﻿using DbTableEditor.Behaviors;
+using DbTableEditor.Commands;
+using DbTableEditor.Data;
 using DbTableEditor.Helpers;
 using DbTableEditor.Models;
 using DbTableEditor.Services;
-using SalesAnalysis.Commands;
 using System.Collections.ObjectModel;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace DbTableEditor.ViewModels
 {
@@ -78,6 +78,7 @@ namespace DbTableEditor.ViewModels
         public RaiseCommand? AddColumnCommand { get; private set; }
         public RaiseCommand? DeleteColumnCommand { get; private set; }
         public RaiseCommand? SaveTableCommand { get; private set; }
+
         public RaiseCommand? TextBoxLostFocusCommand { get; private set; }
         public RaiseCommand? DataGridLostFocusCommand { get; private set; }
 
@@ -352,50 +353,60 @@ namespace DbTableEditor.ViewModels
         {
             if (_isChangeTable)
             {
-                if (parameter is not DataGridCellEditEndingEventArgs e)
+                if (parameter is not DataGridEditInfo info)
                     return;
 
-                // Получаем изменяемую колонку и строку
-                var editedItem = (ColumnInfoModel)e.Row.Item;
-                var columnHeader = e.Column.Header?.ToString();
+                if(info.RowItem is not ColumnInfoModel editedItem)
+                    return;
 
-                if (e.EditingElement is TextBox textBox)
+                if (info.ColumnHeader == "Имя столбца")
                 {
-                    var result = GeneralMethods.ShowSelectionWindow($"Изменить имя столбца с '{editedItem.ColumnName}' на '{textBox.Text}'?");
-                    if(result == MessageBoxResult.Yes)
+                    var result = GeneralMethods.ShowSelectionWindow($"Изменить имя столбца с '{info.OldValue1}' на '{info.NewValue}'?");
+                    if(result == MessageBoxResult.Yes && info.OldValue1 != null && info.NewValue != null)
                     {
-                        _iChangeData.ChangeNameColumn(NewOrChangeTable, editedItem.ColumnName, textBox.Text);
-                        GeneralMethods.ShowNotification("Имя столбца изменено.");
+                        var result2 = _iChangeData.ChangeNameColumn(NewOrChangeTable.TableName, info.OldValue1.ToString(), info.NewValue?.ToString());
+
+                        if (result2)
+                            GeneralMethods.ShowNotification("Имя столбца изменено.");
                     }
                     else
                     {
-                        editedItem.ColumnName = editedItem.ColumnName;
+                        editedItem.ColumnName = info.OldValue1 ?? editedItem.ColumnName;
                     }
                 }
-                else if (e.EditingElement is ComboBox comboBox)
+                else if (info.ColumnHeader == "Тип данных")
                 {
-                    var result = GeneralMethods.ShowSelectionWindow($"Изменить тип столбца с '{editedItem.DataType}' на '{comboBox.SelectedValue}'?");
+                    var result = GeneralMethods.ShowSelectionWindow($"Изменить тип данных столбца c '{(SqlDataType)info.OldValue2}' на '{info.NewValue}'?\r\n\r\n" +
+                        "Выполняемое действие может вызвать потерю данных, поэтому стоит проверить совместимость типов заранее.");
+
                     if (result == MessageBoxResult.Yes)
                     {
-
-                        GeneralMethods.ShowNotification("Тип столбца изменен.");
+                        var result2 = _iChangeData.ChangeTypeColumn(NewOrChangeTable.TableName, editedItem.ColumnName, (SqlDataType)info.NewValue);
+                        
+                        if (result2)
+                            GeneralMethods.ShowNotification("Тип столбца изменен.");
                     }
                     else
                     {
-
+                        editedItem.DataType = info.OldValue2 ?? editedItem.DataType;
                     }
                 }
-                else if (e.EditingElement is CheckBox checkBox)
+                else if (info.ColumnHeader == "Первичный ключ") //Доработать, пока что сырой вариант.
                 {
-                    var result = GeneralMethods.ShowSelectionWindow($"Изменить значение первичного ключа с '{editedItem.IsPrimaryKey}' на '{checkBox.IsChecked}'?");
+                    var result = GeneralMethods.ShowSelectionWindow($"Изменить значение первичного ключа с '{info.OldValue3}' на '{info.NewValue}'?");
                     if (result == MessageBoxResult.Yes)
                     {
+                        bool newPk = Convert.ToBoolean(info.NewValue);
+                        var result2 = _iChangeData.ChangePrimaryKeyColumn(NewOrChangeTable.TableName, editedItem.ColumnName, newPk);
 
-                        GeneralMethods.ShowNotification("Значение первичного ключа изменено.");
+                        if (result2)
+                            GeneralMethods.ShowNotification("Значение первичного ключа изменено.");
+                        else
+                            editedItem.IsPrimaryKey = info.OldValue3 ?? editedItem.IsPrimaryKey;
                     }
                     else
                     {
-                        editedItem.IsPrimaryKey = editedItem.IsPrimaryKey;
+                        editedItem.IsPrimaryKey = info.OldValue3 ?? editedItem.IsPrimaryKey;
                     }
                 }
             }
